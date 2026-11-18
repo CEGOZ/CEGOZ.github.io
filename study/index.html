@@ -87,7 +87,17 @@
                 font-size: 12px;
                 font-family: sans-serif;
             }
-        &lt;/style&gt;
+        
+/* CEGOZ: barra de escritura fija y mensajes con scroll independiente en PC, tablet y móvil */
+html,body{height:100%;min-height:0}
+body{height:100dvh;min-height:0;overflow:hidden;align-items:stretch;justify-content:stretch}
+.main{min-width:0;min-height:0}
+.panel{min-height:0}
+#chat{flex:1 1 0%;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.composer{flex:0 0 auto;position:relative;z-index:3;background:#fff}
+.footer{flex:0 0 auto}
+
+&lt;/style&gt;
     &lt;/head&gt;
     &lt;body&gt;
         
@@ -404,6 +414,20 @@ function normalize(s){
     .replace(/\bplis\b/g,&quot;por favor&quot;).trim();
 }
 
+// Memoria conversacional: consulta únicamente los mensajes del chat activo.
+function previousChatMessages(chat){
+  if(!chat||!Array.isArray(chat.messages))return [];
+  const userMessages=chat.messages.filter(x=&gt;x&amp;&amp;x.role===&quot;user&quot;);
+  // send() guarda el mensaje actual antes de llamar a answer().
+  return userMessages.slice(0,-1);
+}
+function chatRecallText(chat){
+  const entries=(chat?.messages||[]).filter(x=&gt;x&amp;&amp;x.text&amp;&amp;x.type!==&quot;video&quot;).slice(0,-1).slice(-10);
+  if(!entries.length)return &quot;En este chat todavía no hay mensajes anteriores que pueda recuperar.&quot;;
+  return &quot;Esto es lo que hemos hablado recientemente en esta conversación:\n\n&quot;+
+    entries.map(x=&gt;(x.role===&quot;user&quot;?&quot;Tú&quot;:&quot;CEGOZ&quot;)+&quot;: &quot;+String(x.text).slice(0,700)).join(&quot;\n\n&quot;);
+}
+
 /* Calculadora: analizador matemático limitado, sin eval ni Function */
 function calculate(source){
   let s=source.toLowerCase().replace(/,/g,&quot;.&quot;).replace(/:/g,&quot;/&quot;);
@@ -458,8 +482,8 @@ function calculate(source){
   }catch(e){return null;}
 }
 function plainText(html){
-  return String(html||&quot;&quot;).replace(/&lt;[^&gt;]*&gt;/g,&quot; &quot;).replace(/&amp;quot;/g,'&quot;')
-    .replace(/&amp;#39;/g,&quot;'&quot;).replace(/&amp;amp;/g,&quot;&amp;&quot;).replace(/&amp;nbsp;/g,&quot; &quot;)
+  return String(html||&quot;&quot;).replace(/&lt;[^&gt;]*&gt;/g,&quot; &quot;).replace(/&amp;quot;/g,&#x27;&quot;&#x27;)
+    .replace(/&amp;#39;/g,&quot;&#x27;&quot;).replace(/&amp;amp;/g,&quot;&amp;&quot;).replace(/&amp;nbsp;/g,&quot; &quot;)
     .replace(/\s+/g,&quot; &quot;).trim();
 }
 function topicTokens(value){
@@ -479,7 +503,7 @@ function titleRelevance(topic,title,snippet=&quot;&quot;){
 }
 async function wiki(topic){
   const url=&quot;https://es.wikipedia.org/w/api.php?action=query&amp;list=search&amp;srsearch=&quot;
-    +encodeURIComponent('&quot;'+topic+'&quot;')+&quot;&amp;format=json&amp;origin=*&amp;srlimit=5&quot;;
+    +encodeURIComponent(&#x27;&quot;&#x27;+topic+&#x27;&quot;&#x27;)+&quot;&amp;format=json&amp;origin=*&amp;srlimit=5&quot;;
   const response=await fetch(url);
   if(!response.ok)throw Error(&quot;Wikipedia no disponible&quot;);
   const data=await response.json();
@@ -578,6 +602,20 @@ async function answer(raw,chatId){
   const m=c.memory;const t=normalize(raw);
   const clean=t.replace(/[¿?¡!.,]/g,&quot; &quot;).replace(/\s+/g,&quot; &quot;).trim();
   const intent=classifyIntent(raw);
+  const previousUsers=previousChatMessages(c);
+  const previousUser=previousUsers[previousUsers.length-1];
+
+  // Si el usuario pregunta por lo hablado, recupera el historial de este chat.
+  if(/\b(que hemos hablado|de que hablamos|que te he dicho|que dije antes|que recuerdas de (este )?chat|resume (el )?chat|recuerda nuestra conversacion)\b/.test(clean))
+    return chatRecallText(c);
+
+  // Las preguntas de seguimiento quedan vinculadas al último mensaje del usuario.
+  const isFollowUp=/^(y eso|y esto|y por que|pero por que|como asi|y como|puedes ampliarlo|dame mas detalles|continua|sigue|que mas)\b/.test(clean);
+  if(isFollowUp&amp;&amp;previousUser&amp;&amp;previousUser.text){
+    m.topic=String(previousUser.text).slice(0,500);
+    save();
+    return &quot;Sí, seguimos con lo que me preguntaste antes: «&quot;+m.topic+&quot;». Dime qué parte quieres que aclare y tendré en cuenta ese contexto.&quot;;
+  }
 
   // Identidad y biografía del creador de CEGOZ.
   const CREATOR_NAME = &quot;Gonzalo Aranda Moreno&quot;;
@@ -929,7 +967,17 @@ load();
                 font-size: 12px;
                 font-family: sans-serif;
             }
-        &lt;/style&gt;
+        
+/* CEGOZ: barra de escritura fija y mensajes con scroll independiente en PC, tablet y móvil */
+html,body{height:100%;min-height:0}
+body{height:100dvh;min-height:0;overflow:hidden;align-items:stretch;justify-content:stretch}
+.main{min-width:0;min-height:0}
+.panel{min-height:0}
+#chat{flex:1 1 0%;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.composer{flex:0 0 auto;position:relative;z-index:3;background:#fff}
+.footer{flex:0 0 auto}
+
+&lt;/style&gt;
     &lt;/head&gt;
     &lt;body&gt;
         
@@ -1285,6 +1333,20 @@ function normalize(s){
     .replace(/\bplis\b/g,&quot;por favor&quot;).trim();
 }
 
+// Memoria conversacional: consulta únicamente los mensajes del chat activo.
+function previousChatMessages(chat){
+  if(!chat||!Array.isArray(chat.messages))return [];
+  const userMessages=chat.messages.filter(x=&gt;x&amp;&amp;x.role===&quot;user&quot;);
+  // send() guarda el mensaje actual antes de llamar a answer().
+  return userMessages.slice(0,-1);
+}
+function chatRecallText(chat){
+  const entries=(chat?.messages||[]).filter(x=&gt;x&amp;&amp;x.text&amp;&amp;x.type!==&quot;video&quot;).slice(0,-1).slice(-10);
+  if(!entries.length)return &quot;En este chat todavía no hay mensajes anteriores que pueda recuperar.&quot;;
+  return &quot;Esto es lo que hemos hablado recientemente en esta conversación:\n\n&quot;+
+    entries.map(x=&gt;(x.role===&quot;user&quot;?&quot;Tú&quot;:&quot;CEGOZ&quot;)+&quot;: &quot;+String(x.text).slice(0,700)).join(&quot;\n\n&quot;);
+}
+
 /* Calculadora: analizador matemático limitado, sin eval ni Function */
 function calculate(source){
   let s=source.toLowerCase().replace(/,/g,&quot;.&quot;).replace(/:/g,&quot;/&quot;);
@@ -1339,8 +1401,8 @@ function calculate(source){
   }catch(e){return null;}
 }
 function plainText(html){
-  return String(html||&quot;&quot;).replace(/&lt;[^&gt;]*&gt;/g,&quot; &quot;).replace(/&amp;quot;/g,'&quot;')
-    .replace(/&amp;#39;/g,&quot;'&quot;).replace(/&amp;amp;/g,&quot;&amp;&quot;).replace(/&amp;nbsp;/g,&quot; &quot;)
+  return String(html||&quot;&quot;).replace(/&lt;[^&gt;]*&gt;/g,&quot; &quot;).replace(/&amp;quot;/g,&#x27;&quot;&#x27;)
+    .replace(/&amp;#39;/g,&quot;&#x27;&quot;).replace(/&amp;amp;/g,&quot;&amp;&quot;).replace(/&amp;nbsp;/g,&quot; &quot;)
     .replace(/\s+/g,&quot; &quot;).trim();
 }
 function topicTokens(value){
@@ -1360,7 +1422,7 @@ function titleRelevance(topic,title,snippet=&quot;&quot;){
 }
 async function wiki(topic){
   const url=&quot;https://es.wikipedia.org/w/api.php?action=query&amp;list=search&amp;srsearch=&quot;
-    +encodeURIComponent('&quot;'+topic+'&quot;')+&quot;&amp;format=json&amp;origin=*&amp;srlimit=5&quot;;
+    +encodeURIComponent(&#x27;&quot;&#x27;+topic+&#x27;&quot;&#x27;)+&quot;&amp;format=json&amp;origin=*&amp;srlimit=5&quot;;
   const response=await fetch(url);
   if(!response.ok)throw Error(&quot;Wikipedia no disponible&quot;);
   const data=await response.json();
@@ -1459,6 +1521,20 @@ async function answer(raw,chatId){
   const m=c.memory;const t=normalize(raw);
   const clean=t.replace(/[¿?¡!.,]/g,&quot; &quot;).replace(/\s+/g,&quot; &quot;).trim();
   const intent=classifyIntent(raw);
+  const previousUsers=previousChatMessages(c);
+  const previousUser=previousUsers[previousUsers.length-1];
+
+  // Si el usuario pregunta por lo hablado, recupera el historial de este chat.
+  if(/\b(que hemos hablado|de que hablamos|que te he dicho|que dije antes|que recuerdas de (este )?chat|resume (el )?chat|recuerda nuestra conversacion)\b/.test(clean))
+    return chatRecallText(c);
+
+  // Las preguntas de seguimiento quedan vinculadas al último mensaje del usuario.
+  const isFollowUp=/^(y eso|y esto|y por que|pero por que|como asi|y como|puedes ampliarlo|dame mas detalles|continua|sigue|que mas)\b/.test(clean);
+  if(isFollowUp&amp;&amp;previousUser&amp;&amp;previousUser.text){
+    m.topic=String(previousUser.text).slice(0,500);
+    save();
+    return &quot;Sí, seguimos con lo que me preguntaste antes: «&quot;+m.topic+&quot;». Dime qué parte quieres que aclare y tendré en cuenta ese contexto.&quot;;
+  }
 
   // Identidad y biografía del creador de CEGOZ.
   const CREATOR_NAME = &quot;Gonzalo Aranda Moreno&quot;;
